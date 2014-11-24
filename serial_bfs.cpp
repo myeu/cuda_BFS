@@ -3,7 +3,7 @@
 
 using namespace std;
 
-#define NUM_EDGES_PER_NODE 600
+#define NUM_EDGES_PER_NODE 1000
 
 
 class Graph 
