@@ -30,36 +30,28 @@ vector<string> split(const string &s, char delim)
 	return elems;
 }
 
-int main(int argc, char *argv[])
+/*
+ *	In: file in format of node,adj_list where adj_list is sep by " "
+ *	Out: Array of lists
+ *
+ *	Each node's id matches its array position
+ *
+ *	ToDo: Create a struct or class that holds the dist
+ *			and the list, to make an array of structs
+ */
+void readGraphFile(char *filename, list<int> *graph)
 {
-	if (argc != 3)
-    {
-		printf("Usage: %s <file> <num threads>\n",
-               argv[0]);
-		exit(EXIT_FAILURE);
-	}
-
-	int thread_count = atoi(argv[2]);
-    char *filename = argv[1];
-    
-    ifstream file(filename);
+	ifstream file(filename);
 
 	if (!file)
     {
-		printf("Can't open file %s\n", argv[1]);
+		printf("Can't open file %s\n", filename);
 		exit(EXIT_FAILURE);
 	}
-    
-    if (thread_count < 1)
-    {
-        printf("The thread count must be at least 1\n");
-        exit(EXIT_FAILURE);
-    }
 
-    list<int> graph[N_NODES];
-    string line;
+	string line;
 
-    // skip header
+	// skip header
     getline(file,line);
     int nodeNum = 0;
     int neighbor;
@@ -80,8 +72,31 @@ int main(int argc, char *argv[])
 			graph[nodeNum].push_back(neighbor);
 		}
     }
+}
+
+
+
+int main(int argc, char *argv[])
+{
+	if (argc != 3)
+    {
+		printf("Usage: %s <file> <num threads>\n",
+               argv[0]);
+		exit(EXIT_FAILURE);
+	}
+
+	int thread_count = atoi(argv[2]);
+    char *filename = argv[1];	
     
+    if (thread_count < 1)
+    {
+        printf("The thread count must be at least 1\n");
+        exit(EXIT_FAILURE);
+    }
+
+    list<int> graph[N_NODES];
     
+    readGraphFile(filename, graph);
 
 	return 0;
 }
