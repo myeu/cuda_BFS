@@ -12,6 +12,7 @@ void bfsGraph(char *filename)
     ifstream finput;
     finput.open(filename, ios::in | ios::binary);
 
+    // Read the number of nodes
     finput.read((char *)&nb_nodes, 4);
     cout << nb_nodes << endl;
 
@@ -19,12 +20,14 @@ void bfsGraph(char *filename)
     for (int i = 0; i < nb_nodes; i++)
         degrees[i] = 0;
 
+    // Read the cumulative degrees
     finput.read((char*)degrees, nb_nodes * 4);
     cout << degrees[0];
     for (int i = 1; i < nb_nodes; i++)
         cout << " " << degrees[i];
     cout << endl;
 
+    // Read the complete adj list
     int nb_links = degrees[nb_nodes - 1];
     int* links = new int[nb_links];
     finput.read((char*)links, nb_links * 4);
