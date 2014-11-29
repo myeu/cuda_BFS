@@ -189,8 +189,24 @@ void bfsGraph(char *filename, int start_position)
 	//	cout << h_graph_nodes[i].no_of_edges << endl;
 	//}
 
+	// sanity check against the serial BFS code	
+	/*
+	cout << degrees[0] << endl;
+	for (int i = 0; i < 16; i++)
+	{
+		cout << "(" << links[i] << ")" << endl;
+	}
+
+	FILE *fpt = fopen("1092-links.txt", "w");
+	for (int i = starting[1092]; i < degrees[1092]; i++)
+	{
+		fprintf(fpt, "(%d)\n", links[i]);
+	}
+	fclose(fpt);
+
 	cudaMemcpy(h_cost, d_cost, sizeof(int) * nb_nodes,
 		cudaMemcpyDeviceToHost);
+	*/
 
 	// Store results into a file
 	FILE *fpo = fopen("result.txt", "w");
@@ -198,18 +214,19 @@ void bfsGraph(char *filename, int start_position)
 	{
 		fprintf(fpo, "(%d) cost:%d\n", i, h_cost[i]);
 	}
+	fclose(fpo);
+	
+	//test<<<num_of_blocks, num_of_threads_per_block>>>(d_graph_nodes,
+	//	nb_nodes);
 
-	test<<<num_of_blocks, num_of_threads_per_block>>>(d_graph_nodes,
-		nb_nodes);
-
-	cudaMemcpy(h_graph_nodes, d_graph_nodes, sizeof(Node) *nb_nodes,
-		cudaMemcpyDeviceToHost);
+	//cudaMemcpy(h_graph_nodes, d_graph_nodes, sizeof(Node) *nb_nodes,
+	//	cudaMemcpyDeviceToHost);
 
 	//for (int i = 0; i < nb_nodes; i++)
 	//{
 	//	cout << "new starting: " << h_graph_nodes[i].starting << endl;
 	//}
-	fclose(fpo);
+	
 
 	// clean up memory
 	free(h_graph_nodes);
