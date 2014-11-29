@@ -4,6 +4,7 @@ cuda_BFS
 Implements breadth first search for GPU parallel processing using CUDA.
 
 Input file must be in binary and should have the following format (with no newlines):
+
 Number_of_Nodes
 
 Cumulative_count_of_degrees
