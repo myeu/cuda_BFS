@@ -45,8 +45,7 @@ void bfsGraph(char *filename, int start_position)
 	finput.open(filename, ios::in | ios::binary);
 
 	// Read number of nodes, first 4 bytes of file
-	finput.read((char *)&nb_nodes, 4);
-	cout << nb_nodes << endl;
+	finput.read((char*)&nb_nodes, 4);
 
 	if (start_position < 0 || start_position > nb_nodes)
 		return;
@@ -98,6 +97,7 @@ void bfsGraph(char *filename, int start_position)
 		h_graph_visited[i] = false;
 	}
 	h_graph_level[start_position] = true;
+	h_graph_visited[start_position] = true;
 
 	// Copy node list to cuda memory
 	Node *d_graph_nodes;
@@ -111,19 +111,11 @@ void bfsGraph(char *filename, int start_position)
 	cudaMemcpy(d_edge_list, links, sizeof(int) * nb_links,
 		cudaMemcpyHostToDevice);
 
-	// copy the visted array to device memory
+	// Copy the visted array to device memory
 	bool *d_graph_visited;
 	cudaMalloc((void **) &d_graph_visited, sizeof(bool) * nb_nodes);
 	cudaMemcpy(d_graph_visited, h_graph_visited, sizeof(bool) *
 		nb_nodes, cudaMemcpyHostToDevice);
-	//test1<<<1, nb_nodes>>>(d_graph_visited, nb_nodes);
-	//cudaMemcpy(h_graph_visited, d_graph_visited, sizeof(bool) *
-	//		nb_nodes, cudaMemcpyDeviceToHost);
-	//for (int i = 0; i < nb_nodes; i++)
-	//{
-	//	cout << "visited:" <<h_graph_visited[i] << endl;
-	//}
-	
 
 	// Copy the level to device memory
 	bool* d_graph_level;
@@ -163,11 +155,12 @@ void bfsGraph(char *filename, int start_position)
 	//cout << "blocks num : " << num_of_blocks << endl;
 	//dim3 grid(num_of_blocks, 1, 1);
 	//dim3 threads(num_of_threads_per_block, 1, 1);
-
+	int times = 0;
 	do 
 	{
 		stop = false;
-		cudaMemcpy(d_over, &stop, sizeof(bool), cudaMemcpyHostToDevice);
+		cudaMemcpy(d_over, &stop, sizeof(bool), 
+			cudaMemcpyHostToDevice);
 		bfs_kernel<<<num_of_blocks, 
 		num_of_threads_per_block>>>(d_graph_nodes, d_edge_list,
 			d_graph_level, d_graph_visited, d_cost, d_over,
@@ -179,10 +172,26 @@ void bfsGraph(char *filename, int start_position)
 
 		cudaMemcpy(&stop, d_over, sizeof(bool),
 			cudaMemcpyDeviceToHost);
-		cout << "stop : " << stop << endl;
-	} while(stop);
+		//cout << "stop : " << stop << endl;
+		stop = false;
+		times += 1;
+	} while(times < 1);
+	
+	cudaMemcpy(h_cost, d_cost, sizeof(int) * nb_nodes,
+		cudaMemcpyDeviceToHost);
+	
+	cudaMemcpy(h_graph_visited, d_graph_visited, sizeof(bool) *
+			nb_nodes, cudaMemcpyDeviceToHost);
+	
+	cout << "15152: " << h_graph_visited[15152] << " " << h_cost[15152] << endl;
 
-	cout << "success!" << endl;
+	//for (int i = 0; i < nb_nodes; i++)
+	//{
+	//	if (h_graph_visited[i])
+	//		cout << "visited: " << i << ", " << h_cost[i] << endl;
+	//}
+
+	//cout << "success!" << endl;
 	//cout << h_graph_level[0] << endl;
 	//for (int i = 0; i < nb_nodes; i++)
 	//{
@@ -203,10 +212,10 @@ void bfsGraph(char *filename, int start_position)
 		fprintf(fpt, "(%d)\n", links[i]);
 	}
 	fclose(fpt);
-
-	cudaMemcpy(h_cost, d_cost, sizeof(int) * nb_nodes,
-		cudaMemcpyDeviceToHost);
 	*/
+
+	
+	
 
 	// Store results into a file
 	FILE *fpo = fopen("result.txt", "w");
