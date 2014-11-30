@@ -4,6 +4,7 @@
 #include <list>
 #include <fstream>
 #include <string>
+#include <sys/time.h>
 
 using namespace std;
 
@@ -22,7 +23,7 @@ public:
 	int* getEdges(int u);
 	int getNumEdges(int u);
 	void addEdge(int u, int ui, int v);
-	void BFS(int s);
+	void BFS(int s, char *outFile);
 };
 
 Graph::Graph(int size) 
@@ -72,7 +73,7 @@ void Graph::addEdge(int u, int ui, int v)
 	C[u] += 1;
 }
 
-void Graph::BFS(int s) 
+void Graph::BFS(int s, char* outFile) 
 {
 	bool *explored = new bool[n];
 	int *cost = new int[n];
@@ -88,7 +89,7 @@ void Graph::BFS(int s)
 	explored[s] = true;
 	cost[s] = 0;
 
-	cerr << s << ": " << getNumEdges(s) << endl;
+	//cerr << s << ": " << getNumEdges(s) << endl;
 
 	int s_edges, u; 
 
@@ -117,6 +118,13 @@ void Graph::BFS(int s)
 	{
 		printf("(%d) cost:%d\n", i, cost[i]);
 	}*/
+
+	FILE *fpo = fopen(outFile, "w");
+	for (int i = 0; i < n; i++)
+	{
+		fprintf(fpo, "(%d) cost:%d\n", i, cost[i]);
+	}
+	fclose(fpo);
 
 	delete [] explored;
 	delete [] cost;
@@ -159,16 +167,14 @@ void readFile(char *filename, Graph g)
 
     // Read the number of nodes
     finput.read((char *)&nb_nodes, 4);
-	cerr << nb_nodes << endl;
 
     // Read cumulative degrees, 4 bytes per node
 	int *degrees = new int[nb_nodes];
 	finput.read((char*) degrees, nb_nodes * 4);
-	cerr << "0: " << degrees[0] << endl;
 
 	// Create starting array based on degrees
 	int *starting = new int[nb_nodes];
-	memset(starting, 0, sizeof(int) * nb_nodes);
+	//memset(starting, 0, sizeof(int) * nb_nodes);
 	for (int i = 1; i < nb_nodes; i++)
 	{
 		starting[i] = degrees[i - 1];
@@ -178,8 +184,6 @@ void readFile(char *filename, Graph g)
 	int nb_links = degrees[nb_nodes - 1];
 	int *links = new int[nb_links];
 	finput.read((char*) links, nb_links * 4);
-	cerr << "num links: " << nb_links << endl;
-	cerr << "0: " << links[0] << endl;
 
 	finput.close();
 
@@ -189,12 +193,10 @@ void readFile(char *filename, Graph g)
 		for (int j = starting[i]; j < degrees[i]; j++)
 		{
 			// edge from node i, the edge num for this node, the neighbor node
-			cout << i << ": " << j << ", " << j - starting[i] << ", " << links[j] << " [" << degrees[i] << "]" << endl;
+			//cout << i << ": " << j << ", " << j - starting[i] << ", " << links[j] << " [" << degrees[i] << "]" << endl;
 			g.addEdge(i, j - starting[i], links[j]);
 		}
 	}
-
-	cerr << "0 : " << g.getNumEdges(0) << endl;
 
 	delete [] degrees;
 	delete [] starting;
@@ -206,6 +208,7 @@ void readFile(char *filename, Graph g)
 int main(int argc, char **argv)
 {
 	char *filename = argv[1];
+	char *outFile = argv[2];
 
     Graph g(16384);
     readFile(filename, g);
@@ -230,6 +233,14 @@ int main(int argc, char **argv)
     cout << endl;
 	*/
 
-    g.BFS(0);
+    struct timeval start, end;    
+	gettimeofday(&start, NULL);
+
+    g.BFS(0, outFile);
+
+    gettimeofday(&end, NULL);
+	printf("%ld\n",
+           (end.tv_sec * 1000000 + end.tv_usec)
+           - (start.tv_sec * 1000000 + start.tv_usec));
 }
 
