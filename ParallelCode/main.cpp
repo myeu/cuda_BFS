@@ -17,7 +17,7 @@ using namespace std;
 
 # define num_of_threads 10
 
-void bfsGraph(char* filename, int start_position);
+void bfsGraph(char* filename, int start_position, char *outFile);
 
 void* bfs_parallel(void *n);
 
@@ -28,8 +28,9 @@ typedef struct Node {
 
 int main(int argc, char *argv[])
 {
-	char*filename = "random_adj_graph_directed_binary.csv";
-	bfsGraph(filename, 0);
+	char*filename = argv[1];
+	char*outFile = argv[2];
+	bfsGraph(filename, 0, outFile);
 
 }
 
@@ -44,7 +45,7 @@ int* h_cost;
 bool d_over;
 pthread_mutex_t the_mutex;
 
-void bfsGraph(char* filename, int start_position) {
+void bfsGraph(char* filename, int start_position, char *outFile) {
 	    ifstream finput;
 	    pthread_mutex_init(&the_mutex, NULL);	
 	    finput.open(filename, ios::in | ios::binary);
@@ -125,7 +126,7 @@ void bfsGraph(char* filename, int start_position) {
 	        	    pthread_join(pth[i], NULL);
 
 		//Store the result into a file
-    		FILE* fpo = fopen("result.txt", "w");
+    		FILE* fpo = fopen(outFile, "w");
     		for (int i = 0; i < nb_nodes; i++) {
         		fprintf(fpo, "(%d) cost:%d\n", i, h_cost[i]);
     		}
