@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <sys/time.h>
 
 using namespace std;
 
@@ -38,7 +39,7 @@ void parse_args(int argc, char** argv)
 	}
 }
 
-void bfsGraph(char *filename, int start_position)
+void bfsGraph(char *filename, int start_position, char *outFile)
 {
 	int nb_nodes;
 	ifstream finput;
@@ -66,8 +67,8 @@ void bfsGraph(char *filename, int start_position)
 	finput.read((char*) links, nb_links * 4);
 	finput.close();
 
-	cout << "Number of nodes: " << nb_nodes << endl;
-	cout << "Number of links: " << nb_links << endl;
+	//cout << "Number of nodes: " << nb_nodes << endl;
+	//cout << "Number of links: " << nb_links << endl;
 
 	// Determine number of blocks and threads
 	int num_of_blocks = 1;
@@ -137,25 +138,12 @@ void bfsGraph(char *filename, int start_position)
 	cudaMemcpy(d_cost, h_cost, sizeof(int) * nb_nodes,
 		cudaMemcpyHostToDevice);
 
-	//allocate device memory for nb_nodes
-	//int * d_nb_nodes;
-	//cudaMalloc((void **) &nb_nodes, sizeof(int));
-	//cudaMemcpy(d_nb_nodes, &nb_nodes, sizeof(int),
-	//	cudaMemcpyHostToDevice);
-
 	bool *d_over;
 	cudaMalloc((void **) &d_over, sizeof(bool));
 	bool stop;
 
-	//cout << "no of links: " << nb_links << endl;
-	//for (int i = 0; i < nb_links; i++)
-	//{
-	//	cout << links[i] << endl;
-	//}
-	//cout << "blocks num : " << num_of_blocks << endl;
-	//dim3 grid(num_of_blocks, 1, 1);
-	//dim3 threads(num_of_threads_per_block, 1, 1);
-	int times = 0;
+	struct timeval start, end;    
+	gettimeofday(&start, NULL);
 	do 
 	{
 		stop = false;
@@ -166,16 +154,17 @@ void bfsGraph(char *filename, int start_position)
 			d_graph_level, d_graph_visited, d_cost, d_over,
 			nb_nodes);
 		cudaThreadSynchronize();
-		//cudaMemcpy(&nb_nodes, d_nb_nodes, sizeof(int),
-		//	cudaMemcpyDeviceToHost);
-		//cout << "new node num : " << nb_nodes << endl;
 
 		cudaMemcpy(&stop, d_over, sizeof(bool),
 			cudaMemcpyDeviceToHost);
 		//cout << "stop : " << stop << endl;
 		stop = false;
-		times += 1;
-	} while(times < 1);
+	} while(stop);
+
+	gettimeofday(&end, NULL);
+	printf("%ld\n",
+           (end.tv_sec * 1000000 + end.tv_usec)
+           - (start.tv_sec * 1000000 + start.tv_usec));
 	
 	cudaMemcpy(h_cost, d_cost, sizeof(int) * nb_nodes,
 		cudaMemcpyDeviceToHost);
@@ -183,20 +172,9 @@ void bfsGraph(char *filename, int start_position)
 	cudaMemcpy(h_graph_visited, d_graph_visited, sizeof(bool) *
 			nb_nodes, cudaMemcpyDeviceToHost);
 	
-	cout << "15152: " << h_graph_visited[15152] << " " << h_cost[15152] << endl;
-
-	//for (int i = 0; i < nb_nodes; i++)
-	//{
-	//	if (h_graph_visited[i])
-	//		cout << "visited: " << i << ", " << h_cost[i] << endl;
-	//}
+	//cout << "15152: " << h_graph_visited[15152] << " " << h_cost[15152] << endl;
 
 	//cout << "success!" << endl;
-	//cout << h_graph_level[0] << endl;
-	//for (int i = 0; i < nb_nodes; i++)
-	//{
-	//	cout << h_graph_nodes[i].no_of_edges << endl;
-	//}
 
 	// sanity check against the serial BFS code	
 	/*
@@ -218,25 +196,13 @@ void bfsGraph(char *filename, int start_position)
 	
 
 	// Store results into a file
-	FILE *fpo = fopen("result.txt", "w");
+	FILE *fpo = fopen(outFile, "w");
 	for (int i = 0; i < nb_nodes; i++)
 	{
 		fprintf(fpo, "(%d) cost:%d\n", i, h_cost[i]);
 	}
 	fclose(fpo);
 	
-	//test<<<num_of_blocks, num_of_threads_per_block>>>(d_graph_nodes,
-	//	nb_nodes);
-
-	//cudaMemcpy(h_graph_nodes, d_graph_nodes, sizeof(Node) *nb_nodes,
-	//	cudaMemcpyDeviceToHost);
-
-	//for (int i = 0; i < nb_nodes; i++)
-	//{
-	//	cout << "new starting: " << h_graph_nodes[i].starting << endl;
-	//}
-	
-
 	// clean up memory
 	free(h_graph_nodes);
 	free(links);
@@ -255,6 +221,7 @@ int main(int argc, char **argv)
 {
 	//parse_args(argc, argv);
 	char *filename = argv[1];
-	bfsGraph(filename, 0);
+	char*outFile = argv[2];
+	bfsGraph(filename, 0, outFile);
 	return 0;
 }
