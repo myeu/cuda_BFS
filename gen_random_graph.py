@@ -5,8 +5,8 @@ from random import randint
 from struct import pack
 from sys import stdout
 
-edges = 1000	#max edges per node (degree)
-nodes = 16384	#total num nodes
+edges = 10000	#max edges per node (degree)
+nodes = 100000	#total num nodes
 
 
 # write out the number of nodes
