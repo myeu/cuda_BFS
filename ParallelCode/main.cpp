@@ -17,7 +17,7 @@ using namespace std;
 
 # define num_of_threads 10
 
-void bfsGraph(char* filename, int start_position, char *outFile);
+void bfsGraph(char* filename, int start_position);
 
 void* bfs_parallel(void *n);
 
@@ -28,9 +28,8 @@ typedef struct Node {
 
 int main(int argc, char *argv[])
 {
-	char*filename = argv[1];
-	char*outFile = argv[2];
-	bfsGraph(filename, 0, outFile);
+	char*filename = "random_adj_graph_directed_binary.csv";
+	bfsGraph(filename, 0);
 
 }
 
@@ -45,7 +44,7 @@ int* h_cost;
 bool d_over;
 pthread_mutex_t the_mutex;
 
-void bfsGraph(char* filename, int start_position, char *outFile) {
+void bfsGraph(char* filename, int start_position) {
 	    ifstream finput;
 	    pthread_mutex_init(&the_mutex, NULL);	
 	    finput.open(filename, ios::in | ios::binary);
@@ -101,6 +100,7 @@ void bfsGraph(char* filename, int start_position, char *outFile) {
 	            h_graph_visited[i] = false;
 	        }
 	        h_graph_level[start_position] = true;
+		h_graph_visited[start_position] = true;
 
 	        //allocate memory for the result on host
 			h_cost = (int*)malloc(sizeof(int) * nb_nodes);
@@ -117,16 +117,17 @@ void bfsGraph(char* filename, int start_position, char *outFile) {
 			for(int i=0;i<num_of_threads;i++){
 					pthread_mutex_lock(&the_mutex);
 	        			pthread_create(&pth[i],NULL, bfs_parallel,(void *)&i);
-					sleep(3);
+					sleep(1);
 					pthread_mutex_unlock(&the_mutex);
 			}
-                }while(d_over);
 
-	        for(int i=0;i<num_of_threads;i++)
+			for(int i=0;i<num_of_threads;i++)
 	        	    pthread_join(pth[i], NULL);
 
+                }while(d_over);
+	        
 		//Store the result into a file
-    		FILE* fpo = fopen(outFile, "w");
+    		FILE* fpo = fopen("result.txt", "w");
     		for (int i = 0; i < nb_nodes; i++) {
         		fprintf(fpo, "(%d) cost:%d\n", i, h_cost[i]);
     		}
@@ -153,11 +154,11 @@ void* bfs_parallel(void *n) {
 
 	for(int i = first; i<last; i++) {
 		if (i < last && h_graph_level[i]) {
-		        h_graph_level[i] = false;
-		        h_graph_visited[i] = true;
+		        h_graph_level[i] = false;		        
 		        for (int j = h_graph_nodes[i].starting; j < (h_graph_nodes[i].no_of_edges + h_graph_nodes[i].starting); j++) {
 		            int id = links[j];
 		            if (!h_graph_visited[id]) {
+				h_graph_visited[id] = true;
 		                //calculate in which level the vertex is visited
 		                h_cost[id] = h_cost[i] + 1;
 		                h_graph_level[id] = true;
