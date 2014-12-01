@@ -109,11 +109,12 @@ void bfsGraph(char* filename, int start_position) {
 			}
 			h_cost[start_position] = 0;
 
-	        pthread_t pth[num_of_threads];
+	        pthread_t pth[nb_nodes];
 		        
 		do {
+			d_over = false;
 			for(int num = 0; num <nb_nodes; num = num+10) { 
-				d_over = false;
+				
 				for(int i=num;i<num_of_threads+num;i++){
 					//pthread_mutex_lock(&the_mutex);
 	        			pthread_create(&pth[i],NULL, bfs_parallel,(void *)&i);
@@ -121,13 +122,23 @@ void bfsGraph(char* filename, int start_position) {
 					//pthread_mutex_unlock(&the_mutex);
 				}
 
-				for(int i=num;i<num_of_threads+num;i++)
+				for(int i=num;i<num_of_threads+num;i++) {
 	        	   		pthread_join(pth[i], NULL);
+					//pthread_exit(&pth[i]);
+				}
+				//for(int i=num;i<num_of_threads+num;i++) {
+					//if(num < nb_nodes-10)
+	  					//pthread_exit(&pth[i]);
+				//}
+				cout<<"num is"<<num<<endl;
+
+
 			}
 				
                 }while(d_over);
 	        
 		//Store the result into a file
+		cout<<"Write result file"<<endl;
     		FILE* fpo = fopen("result.txt", "w");
     		for (int i = 0; i < nb_nodes; i++) {
         		fprintf(fpo, "(%d) cost:%d\n", i, h_cost[i]);
@@ -143,17 +154,17 @@ void bfsGraph(char* filename, int start_position) {
 }
 
 void* bfs_parallel(void *n) {
-	int thread_id = *(int*)n;
-	int m = nb_nodes/num_of_threads;
-	int first = thread_id*m;
-        int last;
-	if(num_of_threads > nb_nodes)
-		last = nb_nodes;
-        else
-		last = first + m;
+	int i = *(int*)n;
+	//int m = nb_nodes/num_of_threads;
+	//int first = thread_id*m;
+        //int last;
+	//if(num_of_threads > nb_nodes)
+		//last = nb_nodes;
+        //else
+		//last = first + m;
 
-	for(int i = first; i<last; i++) {
-		if (i < last && h_graph_level[i]) {
+	//for(i = first; i<last; i++) {
+		if (i < nb_nodes && h_graph_level[i]) {
 		        h_graph_level[i] = false;		        
 		        for (int j = h_graph_nodes[i].starting; j < (h_graph_nodes[i].no_of_edges + h_graph_nodes[i].starting); j++) {
 		            int id = links[j];
@@ -167,7 +178,7 @@ void* bfs_parallel(void *n) {
 		            }
 		        }
 		    }
-	}
+	//}
 
 	return NULL;
 }
