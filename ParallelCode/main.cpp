@@ -110,20 +110,21 @@ void bfsGraph(char* filename, int start_position) {
 			h_cost[start_position] = 0;
 
 	        pthread_t pth[num_of_threads];
-		
-	        do {
-			
-			d_over = false;
-			for(int i=0;i<num_of_threads;i++){
-					pthread_mutex_lock(&the_mutex);
+		        
+		do {
+			for(int num = 0; num <nb_nodes; num = num+10) { 
+				d_over = false;
+				for(int i=num;i<num_of_threads+num;i++){
+					//pthread_mutex_lock(&the_mutex);
 	        			pthread_create(&pth[i],NULL, bfs_parallel,(void *)&i);
-					sleep(1);
-					pthread_mutex_unlock(&the_mutex);
+					//sleep(1);
+					//pthread_mutex_unlock(&the_mutex);
+				}
+
+				for(int i=num;i<num_of_threads+num;i++)
+	        	   		pthread_join(pth[i], NULL);
 			}
-
-			for(int i=0;i<num_of_threads;i++)
-	        	    pthread_join(pth[i], NULL);
-
+				
                 }while(d_over);
 	        
 		//Store the result into a file
@@ -144,7 +145,6 @@ void bfsGraph(char* filename, int start_position) {
 void* bfs_parallel(void *n) {
 	int thread_id = *(int*)n;
 	int m = nb_nodes/num_of_threads;
-
 	int first = thread_id*m;
         int last;
 	if(num_of_threads > nb_nodes)
