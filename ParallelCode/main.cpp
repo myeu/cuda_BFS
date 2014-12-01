@@ -28,9 +28,13 @@ typedef struct Node {
 
 int main(int argc, char *argv[])
 {
+	if (argc != 2)
+	{
+		printf("Usage: %s <input file> \n", argv[0]);
+		exit(EXIT_FAILURE);
+	}
 	char* filename = argv[1];
 	bfsGraph(filename, 0);
-
 }
 
 int nb_nodes;
@@ -72,7 +76,7 @@ void bfsGraph(char* filename, int start_position) {
 
 	finput.close();
 
-	cout<<"Number of nodes are"<<nb_nodes<<endl;
+	cout<<"Number of nodes are "<<nb_nodes<<endl;
 
 	//allocate host memory
 	h_graph_nodes = (Node*) malloc(sizeof(Node) * nb_nodes);
@@ -106,8 +110,6 @@ void bfsGraph(char* filename, int start_position) {
 		d_over = false;
 		for(int num = 0; num <nb_nodes; num = num+10) 
 		{ 	
-			cout<<"num is "<<num<<endl;
-
 			for(int i = num; i < num_of_threads+num; i++){
 				//cout << "i is " << i << endl;
 				pthread_create(&pth[i],NULL, bfs_parallel,(void *)i);
@@ -116,8 +118,8 @@ void bfsGraph(char* filename, int start_position) {
 			for(int i=num;i<num_of_threads+num;i++) {
 					pthread_join(pth[i], NULL);
 			}			
-			cout << "pthreads joined" << endl;
 		}
+		cout << "Iteration" << endl;
 	} while(d_over);
 		
 	//Store the result into a file
@@ -134,7 +136,7 @@ void* bfs_parallel(void *n) {
 	//cout << "  kernel i is "<< i <<endl;
 
 	if (i < nb_nodes && h_graph_level[i]) {
-		cout<<"Process thread"<< endl;
+		//cout<<"Process thread"<< endl;
 		h_graph_level[i] = false;		        
 		for (int j = h_graph_nodes[i].starting; j < (h_graph_nodes[i].no_of_edges + h_graph_nodes[i].starting); j++) {
 			int id = links[j];
@@ -149,6 +151,10 @@ void* bfs_parallel(void *n) {
 				d_over = true;
 			}
 		}
+	}
+	if (i == 3)
+	{
+		cout << "15152: " << h_graph_level[i] << " " << h_cost[i] << endl;
 	}
 
 	return NULL;
