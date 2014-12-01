@@ -158,11 +158,11 @@ void bfsGraph(char *filename, int start_position, char *outFile)
 		cudaMemcpy(&stop, d_over, sizeof(bool),
 			cudaMemcpyDeviceToHost);
 		//cout << "stop : " << stop << endl;
-		stop = false;
+		//stop = false;
 	} while(stop);
 
 	gettimeofday(&end, NULL);
-	printf("%ld\n",
+	printf("%d nodes: %ld\n", nb_nodes,
            (end.tv_sec * 1000000 + end.tv_usec)
            - (start.tv_sec * 1000000 + start.tv_usec));
 	
