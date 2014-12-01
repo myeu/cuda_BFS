@@ -162,9 +162,11 @@ void* bfs_parallel(void *n) {
 		//last = nb_nodes;
         //else
 		//last = first + m;
+        cout<<"I is "<<i<<endl;
 
 	//for(i = first; i<last; i++) {
 		if (i < nb_nodes && h_graph_level[i]) {
+			cout<<"Entered kernel bfs"<<endl;
 		        h_graph_level[i] = false;		        
 		        for (int j = h_graph_nodes[i].starting; j < (h_graph_nodes[i].no_of_edges + h_graph_nodes[i].starting); j++) {
 		            int id = links[j];
