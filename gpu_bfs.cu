@@ -41,9 +41,9 @@ int starting_node_id;
 
 int nb_nodes;
 int nb_links;
-int *degrees = new int[nb_nodes];
-int *starting = new int[nb_nodes];
-int *links = new int[nb_links];
+int *degrees;
+int *starting;
+int *links;
 
 
 void readFile(char *filename)
@@ -51,22 +51,24 @@ void readFile(char *filename)
 	ifstream finput(filename, ios::in | ios::binary);
 	if(!finput.is_open())
 	{
-		cerr << "Unable to open file" << endl;
+		cout << "Unable to open file" << endl;
 		exit(EXIT_FAILURE);
 	}
 
 	// Read number of nodes, first 4 bytes of file
 	finput.read((char*)&nb_nodes, 4);
 
-	if (start_position < 0 || start_position > nb_nodes)
+	if (starting_node_id < 0 || starting_node_id > nb_nodes)
 	{
 		cerr << "Starting position is invalid" << endl;
 		exit(EXIT_FAILURE);
 	}
 
 	// Read cumulative degrees, 4 bytes per node
+	degrees = new int[nb_nodes];
 	finput.read((char*) degrees, nb_nodes * 4);
 	
+	starting = new int[nb_nodes];
 	memset(starting, 0, sizeof(int) * nb_nodes);
 	for (int i = 1; i < nb_nodes; i++)
 	{
@@ -75,33 +77,30 @@ void readFile(char *filename)
 
 	// Read links, 4 bytes per link
 	nb_links = degrees[nb_nodes - 1];
-	
+	links = new int[nb_links];
 	finput.read((char*) links, nb_links * 4);
+
 	finput.close();
 }
 
 
-void bfsGraph(char *filename, char *outFile)
+void bfsGraph(char *outFile)
 {
 	// allocate host memory
 	Node *h_graph_nodes = (Node *) malloc(sizeof(Node) * nb_nodes);
-	bool* h_graph_level = (bool *) malloc(sizeof(bool) * nb_nodes);
 	bool* h_graph_visited = (bool *) malloc(sizeof(bool) * nb_nodes);
 
 	// Initialize memory of nodes
 	h_graph_nodes[0].starting = 0;
 	h_graph_nodes[0].no_of_edges = degrees[0];
-	h_graph_level[0] = false;
 	h_graph_visited[0] = false;
 	for (unsigned int i = 1; i < nb_nodes; i++)
 	{
 		h_graph_nodes[i].starting = starting[i];
 		h_graph_nodes[i].no_of_edges = degrees[i] - degrees[i-1];
-		h_graph_level[i] = false;
 		h_graph_visited[i] = false;
 	}
-	h_graph_level[start_position] = true;
-	h_graph_visited[start_position] = true;
+	h_graph_visited[starting_node_id] = true;
 
 	// Copy node list to cuda memory
 	Node *d_graph_nodes;
@@ -121,19 +120,13 @@ void bfsGraph(char *filename, char *outFile)
 	cudaMemcpy(d_graph_visited, h_graph_visited, sizeof(bool) *
 		nb_nodes, cudaMemcpyHostToDevice);
 
-	// Copy the level to device memory
-	bool* d_graph_level;
-	cudaMalloc((void **) &d_graph_level, sizeof(bool) * nb_nodes);
-	cudaMemcpy(d_graph_level, h_graph_level, sizeof(bool) * nb_nodes,
-		cudaMemcpyHostToDevice);
-
 	// Allocate memory for the result on host
 	int *h_cost = (int *) malloc(sizeof(int) * nb_nodes);
 	for (int i = 0; i < nb_nodes; i++)
 	{
 		h_cost[i] = -1;
 	}
-	h_cost[start_position] = 0;
+	h_cost[starting_node_id] = 0;
 
 	// Allocate device memory for result
 	int *d_cost;
@@ -154,6 +147,7 @@ void bfsGraph(char *filename, char *outFile)
 	bool *d_over;
 	cudaMalloc((void **) &d_over, sizeof(bool));
 	bool stop;
+	int level = 0;
 
 	// Call the kernel at each level iteration
 	struct timeval start, end;    
@@ -163,14 +157,16 @@ void bfsGraph(char *filename, char *outFile)
 		stop = false;
 		cudaMemcpy(d_over, &stop, sizeof(bool), 
 			cudaMemcpyHostToDevice);
+
 		bfs_kernel<<<num_of_blocks, 
 		num_of_threads_per_block>>>(d_graph_nodes, d_edge_list,
-			d_graph_level, d_graph_visited, d_cost, d_over,
-			nb_nodes);
+			 d_graph_visited, d_cost, level, d_over, nb_nodes);
+		
 		cudaThreadSynchronize();
 
 		cudaMemcpy(&stop, d_over, sizeof(bool),
 			cudaMemcpyDeviceToHost);
+		level++;
 
 	} while(stop);
 
@@ -196,12 +192,10 @@ void bfsGraph(char *filename, char *outFile)
 	// clean up memory
 	free(h_graph_nodes);
 	free(links);
-	free(h_graph_level);
 	free(h_graph_visited);
 	free(h_cost);
 	cudaFree(d_graph_nodes);
 	cudaFree(d_edge_list);
-	cudaFree(d_graph_level);
 	cudaFree(d_graph_visited);
 	cudaFree(d_cost);
 
@@ -217,6 +211,7 @@ int main(int argc, char **argv)
 	char *filename = argv[1];
 	char*outFile = argv[2];
 	starting_node_id = 0;
-	bfsGraph(filename, outFile);
+	readFile(filename);
+	bfsGraph(outFile);
 	return 0;
 }
