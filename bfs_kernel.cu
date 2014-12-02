@@ -13,11 +13,15 @@ typedef struct Node {
  *   d_edge_list     packed edge list, is num. edges long
  *   d_graph_level   true if the node is on the frontier (not yet 
  *                       discovered), is num. nodes long
- *   d_graph_visited true if cost has been set, don't set again, 
- *                       is num. nodes long
+ *   d_graph_visited true if cost has been set, don't set again 
+ *                       later, is num. nodes long
  *   d_cost          distance from start node, is num. nodes long
  *   loop            true if a node was found on the frontier
  *   no_of_nodes     number of nodes
+ *
+ *   >1 thread may try to set cost at the same time,
+ *      but its a benign race. They all set it to the same
+ *      thing. Only nodes at the same level can set cost.
  */
 __global__ void
 bfs_kernel(Node* d_graph_nodes, int* d_edge_list, bool* d_graph_level,
@@ -42,9 +46,10 @@ bfs_kernel(Node* d_graph_nodes, int* d_edge_list, bool* d_graph_level,
             int id = d_edge_list[i];
 
             if (!d_graph_visited[id]) {
-                //calculate in which level the vertex is visited
+                //distance is set to level the vertex is visited
                 d_cost[id] = d_cost[tid] + 1;
                 d_graph_level[id] = true;
+                // cost is set, don't set again
                 d_graph_visited[id] = true; 
                 // a frontier node was found, iterate level again
                 *loop = true;

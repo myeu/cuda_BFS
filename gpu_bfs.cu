@@ -34,13 +34,20 @@ using namespace std;
  *		
  */
 
-
 const int MAX_THREADS_PER_BLOCK = 256;
 char *infile = NULL;
 
-void bfsGraph(char *filename, int start_position, char *outFile)
+int starting_node_id;
+
+int nb_nodes;
+int nb_links;
+int *degrees = new int[nb_nodes];
+int *starting = new int[nb_nodes];
+int *links = new int[nb_links];
+
+
+void readFile(char *filename)
 {
-	int nb_nodes;
 	ifstream finput(filename, ios::in | ios::binary);
 	if(!finput.is_open())
 	{
@@ -52,12 +59,14 @@ void bfsGraph(char *filename, int start_position, char *outFile)
 	finput.read((char*)&nb_nodes, 4);
 
 	if (start_position < 0 || start_position > nb_nodes)
-		return;
+	{
+		cerr << "Starting position is invalid" << endl;
+		exit(EXIT_FAILURE);
+	}
 
 	// Read cumulative degrees, 4 bytes per node
-	int *degrees = new int[nb_nodes];
 	finput.read((char*) degrees, nb_nodes * 4);
-	int *starting = new int[nb_nodes];
+	
 	memset(starting, 0, sizeof(int) * nb_nodes);
 	for (int i = 1; i < nb_nodes; i++)
 	{
@@ -65,11 +74,15 @@ void bfsGraph(char *filename, int start_position, char *outFile)
 	}
 
 	// Read links, 4 bytes per link
-	int nb_links = degrees[nb_nodes - 1];
-	int *links = new int[nb_links];
+	nb_links = degrees[nb_nodes - 1];
+	
 	finput.read((char*) links, nb_links * 4);
 	finput.close();
+}
 
+
+void bfsGraph(char *filename, char *outFile)
+{
 	// allocate host memory
 	Node *h_graph_nodes = (Node *) malloc(sizeof(Node) * nb_nodes);
 	bool* h_graph_level = (bool *) malloc(sizeof(bool) * nb_nodes);
@@ -171,26 +184,6 @@ void bfsGraph(char *filename, int start_position, char *outFile)
 	
 	cudaMemcpy(h_graph_visited, d_graph_visited, sizeof(bool) *
 			nb_nodes, cudaMemcpyDeviceToHost);
-	
-	//cout << "15152: " << h_graph_visited[15152] << " " << h_cost[15152] << endl;
-
-	//cout << "success!" << endl;
-
-	// sanity check against the serial BFS code	
-	/*
-	cout << degrees[0] << endl;
-	for (int i = 0; i < 16; i++)
-	{
-		cout << "(" << links[i] << ")" << endl;
-	}
-
-	FILE *fpt = fopen("1092-links.txt", "w");
-	for (int i = starting[1092]; i < degrees[1092]; i++)
-	{
-		fprintf(fpt, "(%d)\n", links[i]);
-	}
-	fclose(fpt);
-	*/
 
 	// Store results into a file
 	FILE *fpo = fopen(outFile, "w");
@@ -223,7 +216,7 @@ int main(int argc, char **argv)
 	}
 	char *filename = argv[1];
 	char*outFile = argv[2];
-	int starting_node_id = 0;
-	bfsGraph(filename, starting_node_id, outFile);
+	starting_node_id = 0;
+	bfsGraph(filename, outFile);
 	return 0;
 }
