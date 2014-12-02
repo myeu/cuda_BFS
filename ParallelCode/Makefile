@@ -1,9 +1,8 @@
-default: main
+default: parallelExecution
 
 main: main.cpp
-	g++ -o main -g -lpthread main.cpp
+	g++ -o parallelExecution -g -lpthread parallelExecution.cpp
 
 clean:
-	-rm -f main
-
+	-rm -f parallelExecution
 
