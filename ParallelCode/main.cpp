@@ -39,7 +39,6 @@ int main(int argc, char *argv[])
 
 int nb_nodes;
 Node* h_graph_nodes;
-bool* h_graph_level;
 bool* h_graph_visited;
 int* degrees;
 int* starting;
@@ -80,21 +79,17 @@ void bfsGraph(char* filename, int start_position) {
 
 	//allocate host memory
 	h_graph_nodes = (Node*) malloc(sizeof(Node) * nb_nodes);
-	h_graph_level = (bool*) malloc(sizeof(bool) * nb_nodes);
 	h_graph_visited = (bool*) malloc(sizeof(bool) * nb_nodes);
 
 		//initialize the memory of nodes
 	h_graph_nodes[0].starting = 0;
 	h_graph_nodes[0].no_of_edges = degrees[0];
-	h_graph_level[0] = false;
 	h_graph_visited[0] = false;
 	for (unsigned int i = 1; i < nb_nodes; i++) {
 		h_graph_nodes[i].starting = starting[i];
 		h_graph_nodes[i].no_of_edges = degrees[i] - degrees[i-1];
-		h_graph_level[i] = false;
 		h_graph_visited[i] = false;
 	}
-	h_graph_level[start_position] = true;
 	h_graph_visited[start_position] = true;
 
 	//allocate memory for the result on host
@@ -105,14 +100,20 @@ void bfsGraph(char* filename, int start_position) {
 	h_cost[start_position] = 0;
 
 	pthread_t pth[nb_nodes];
+
+	int iteration = 0;
+	int *threadInfo;
 			
 	do {
 		d_over = false;
 		for(int num = 0; num <nb_nodes; num = num+10) 
 		{ 	
 			for(int i = num; i < num_of_threads+num; i++){
-				//cout << "i is " << i << endl;
-				pthread_create(&pth[i],NULL, bfs_parallel,(void *)i);
+				threadInfo = (int *) malloc(sizeof(int) * 2);
+				threadInfo[0] = iteration;
+				threadInfo[1] = i;
+
+				pthread_create(&pth[i],NULL, bfs_parallel,(void *) threadInfo);
 			}
 
 			for(int i=num;i<num_of_threads+num;i++) {
@@ -120,24 +121,25 @@ void bfsGraph(char* filename, int start_position) {
 			}			
 		}
 		cout << "Iteration" << endl;
+		iteration++;
 	} while(d_over);
 		
 	//Store the result into a file
 	cout<<"Write result file"<<endl;
 	FILE* fpo = fopen("result.txt", "w");
 	for (int i = 0; i < nb_nodes; i++) {
-		fprintf(fpo, "(%d) cost:%d\n", i, h_cost[i]);
+		fprintf(fpo, "(%d) cost: %d\n", i, h_cost[i]);
 	}
 	fclose(fpo);
 }
 
-void* bfs_parallel(void *n) {
-	long i = (int) (long) n;
-	//cout << "  kernel i is "<< i <<endl;
+void* bfs_parallel(void *info) {
+	int *myInfo = (int *) info;
+	int level = (int) myInfo[0];
+	int i = (int) myInfo[1];
 
-	if (i < nb_nodes && h_graph_level[i]) {
+	if (i < nb_nodes && h_cost[i] == level) { //short circuts if i is out of bounds, cost[i] is safe
 		//cout<<"Process thread"<< endl;
-		h_graph_level[i] = false;		        
 		for (int j = h_graph_nodes[i].starting; j < (h_graph_nodes[i].no_of_edges + h_graph_nodes[i].starting); j++) {
 			int id = links[j];
 			if (!h_graph_visited[id]) {
@@ -145,16 +147,11 @@ void* bfs_parallel(void *n) {
 						
 				//calculate in which level the vertex is visited
 				h_cost[id] = h_cost[i] + 1;
-				h_graph_level[id] = true;
 						
 				//to make the loop continues
 				d_over = true;
 			}
 		}
-	}
-	if (i == 3)
-	{
-		cout << "15152: " << h_graph_level[i] << " " << h_cost[i] << endl;
 	}
 
 	return NULL;
