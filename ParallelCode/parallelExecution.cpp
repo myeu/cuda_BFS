@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <pthread.h>
 #include <cstring>
+#include <sys/time.h>
 
 using namespace std;
 
@@ -103,6 +104,9 @@ void bfsGraph(char* filename, int start_position) {
 
 	int iteration = 0;
 	int *threadInfo;
+
+	struct timeval start, end;    
+	gettimeofday(&start, NULL);
 			
 	do {
 		d_over = false;
@@ -123,6 +127,11 @@ void bfsGraph(char* filename, int start_position) {
 		cout << "Iteration" << endl;
 		iteration++;
 	} while(d_over);
+
+	gettimeofday(&end, NULL);
+	printf("%ld\n",
+           (end.tv_sec * 1000000 + end.tv_usec)
+           - (start.tv_sec * 1000000 + start.tv_usec));
 		
 	//Store the result into a file
 	cout<<"Write result file"<<endl;
@@ -139,15 +148,12 @@ void* bfs_parallel(void *info) {
 	int i = (int) myInfo[1];
 
 	if (i < nb_nodes && h_cost[i] == level) { //short circuts if i is out of bounds, cost[i] is safe
-		//cout<<"Process thread"<< endl;
 		for (int j = h_graph_nodes[i].starting; j < (h_graph_nodes[i].no_of_edges + h_graph_nodes[i].starting); j++) {
 			int id = links[j];
 			if (!h_graph_visited[id]) {
-				h_graph_visited[id] = true;
-						
+				h_graph_visited[id] = true;						
 				//calculate in which level the vertex is visited
 				h_cost[id] = h_cost[i] + 1;
-						
 				//to make the loop continues
 				d_over = true;
 			}
