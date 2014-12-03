@@ -23,7 +23,7 @@ public:
 	int* getEdges(int u);
 	int getNumEdges(int u);
 	void addEdge(int u, int ui, int v);
-	void BFS(int s, char *outFile);
+	int BFS(int s, char *outFile);
 };
 
 Graph::Graph(int size) 
@@ -73,7 +73,7 @@ void Graph::addEdge(int u, int ui, int v)
 	C[u] += 1;
 }
 
-void Graph::BFS(int s, char* outFile) 
+int Graph::BFS(int s, char* outFile) 
 {
 	bool *explored = new bool[n];
 	int *cost = new int[n];
@@ -89,9 +89,8 @@ void Graph::BFS(int s, char* outFile)
 	explored[s] = true;
 	cost[s] = 0;
 
-	//cerr << s << ": " << getNumEdges(s) << endl;
-
-	int s_edges, u; 
+	int s_edges, u, new_cost;
+	int max_cost = 0; 
 
 	while (!queue.empty())
 	{
@@ -109,7 +108,10 @@ void Graph::BFS(int s, char* outFile)
 			{
 				queue.push_back(u);
 				explored[u] = true;
-				cost[u] = cost[s] + 1;
+				new_cost = cost[s] + 1;
+				cost[u] = new_cost;
+				if (new_cost > max_cost)
+					max_cost = new_cost;
 			}
 		}
 	}
@@ -128,6 +130,8 @@ void Graph::BFS(int s, char* outFile)
 
 	delete [] explored;
 	delete [] cost;
+
+	return max_cost;
 }
 
 void mini_example(Graph &g)
@@ -186,7 +190,6 @@ void readFile(char *filename, Graph g)
 	finput.read((char*) links, nb_links * 4);
 
 	finput.close();
-
 	// Create graph nodes by adding edges
 	for (int i=0; i < nb_nodes; i++)
 	{
@@ -209,8 +212,10 @@ int main(int argc, char **argv)
 {
 	char *filename = argv[1];
 	char *outFile = argv[2];
+	int numNodes = atoi(argv[3]);
+	int startNode = rand() % numNodes;
 
-    Graph g(16384);
+    Graph g(numNodes);
     readFile(filename, g);
 
     /*Graph g(12);
@@ -233,14 +238,15 @@ int main(int argc, char **argv)
     cout << endl;
 	*/
 
+    int max_cost = 0;
     struct timeval start, end;    
 	gettimeofday(&start, NULL);
 
-    g.BFS(0, outFile);
+    max_cost = g.BFS(startNode, outFile);
 
     gettimeofday(&end, NULL);
-	printf("%ld\n",
+	printf("%ld %d\n",
            (end.tv_sec * 1000000 + end.tv_usec)
-           - (start.tv_sec * 1000000 + start.tv_usec));
+           - (start.tv_sec * 1000000 + start.tv_usec), max_cost);
 }
 

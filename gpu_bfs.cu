@@ -171,9 +171,10 @@ void bfsGraph(char *outFile)
 	} while(stop);
 
 	gettimeofday(&end, NULL);
-	printf("%ld\n",
+
+	printf("%ld %d\n",
            (end.tv_sec * 1000000 + end.tv_usec)
-           - (start.tv_sec * 1000000 + start.tv_usec));
+           - (start.tv_sec * 1000000 + start.tv_usec), level);
 	
 	cudaMemcpy(h_cost, d_cost, sizeof(int) * nb_nodes,
 		cudaMemcpyDeviceToHost);
@@ -210,8 +211,11 @@ int main(int argc, char **argv)
 	}
 	char *filename = argv[1];
 	char*outFile = argv[2];
-	starting_node_id = 0;
+	
 	readFile(filename);
+	
+	starting_node_id = rand() % nb_nodes;
+
 	bfsGraph(outFile);
 	return 0;
 }
