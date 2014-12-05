@@ -22,7 +22,7 @@ typedef struct Node {
  *      but its a benign race. They all set it to the same
  *      thing. Only nodes at the same level can set cost.
  */
- 
+
 __global__ void
 bfs_kernel(Node* d_graph_nodes, int* d_edge_list, bool* d_graph_visited, 
     int* d_cost, int level, bool* loop, int no_of_nodes) 
