@@ -27,7 +27,7 @@ using namespace std;
  *			written in binary with no newlines or commas
  *
  *	Output:
- *		stdout: Time it took kernel to run, in ms
+ *		stdout: Time it took kernel to run, in microseconds
  *		output file: Each node and its distance from starting node
  *					(0) cost:0
  *					(1) cost:3
@@ -172,9 +172,10 @@ void bfsGraph(char *outFile)
 
 	gettimeofday(&end, NULL);
 
-	printf("%ld %d\n",
+	// print duration of all iterations of kernel execution
+	printf("%ld\n",
            (end.tv_sec * 1000000 + end.tv_usec)
-           - (start.tv_sec * 1000000 + start.tv_usec), level);
+           - (start.tv_sec * 1000000 + start.tv_usec));
 	
 	cudaMemcpy(h_cost, d_cost, sizeof(int) * nb_nodes,
 		cudaMemcpyDeviceToHost);
@@ -204,11 +205,13 @@ void bfsGraph(char *outFile)
 
 int main(int argc, char **argv)
 {
+	// Code for printing distances to an output file
 	if (argc != 3)
 	{
 		printf("Usage: %s <input file> <output file>\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
+
 	char *filename = argv[1];
 	char*outFile = argv[2];
 	
